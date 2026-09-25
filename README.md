@@ -26,10 +26,8 @@ pip install -r requirements.txt
 
 ## Usage
 
-### GUI (recommended)
-
 ```bash
-python gui.py
+python main.py
 ```
 
 A window will open. From there:
@@ -41,29 +39,13 @@ A window will open. From there:
 
 The output preview appears instantly on success.
 
-### CLI (alternative)
-
-```bash
-python main.py <encrypt|decrypt> <input_image> <output_image> --key <integer> [--mode <xor|swap|combined>]
-```
-
-```bash
-# Encrypt
-python main.py encrypt photo.png encrypted.png --key 42
-
-# Decrypt
-python main.py decrypt encrypted.png restored.png --key 42
-```
-
 ---
 
 ## Project Structure
 
 ```
 SCT_CS_2/
-├── gui.py           # Tkinter GUI (main entry point)
-├── main.py          # CLI interface (alternative)
-├── encryptor.py     # Core encryption/decryption logic
+├── main.py          # Everything — encryption logic + GUI
 ├── requirements.txt # Dependencies (pillow, numpy)
 └── README.md
 ```
