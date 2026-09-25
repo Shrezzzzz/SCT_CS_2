@@ -26,33 +26,33 @@ pip install -r requirements.txt
 
 ## Usage
 
+### GUI (recommended)
+
+```bash
+python gui.py
+```
+
+A window will open. From there:
+1. Click **Browse** to select your input image
+2. Set the output file path (auto-suggested)
+3. Enter an integer **key**
+4. Pick a **mode** and **operation** (Encrypt / Decrypt)
+5. Click **▶ Run**
+
+The output preview appears instantly on success.
+
+### CLI (alternative)
+
 ```bash
 python main.py <encrypt|decrypt> <input_image> <output_image> --key <integer> [--mode <xor|swap|combined>]
 ```
 
-### Encrypt an image
-
 ```bash
+# Encrypt
 python main.py encrypt photo.png encrypted.png --key 42
-```
 
-### Decrypt it back
-
-```bash
+# Decrypt
 python main.py decrypt encrypted.png restored.png --key 42
-```
-
-### Use a specific mode
-
-```bash
-# XOR only
-python main.py encrypt photo.png out_xor.png --key 42 --mode xor
-
-# Pixel swap only
-python main.py encrypt photo.png out_swap.png --key 42 --mode swap
-
-# XOR + swap (default)
-python main.py encrypt photo.png out_combined.png --key 42 --mode combined
 ```
 
 ---
@@ -61,7 +61,8 @@ python main.py encrypt photo.png out_combined.png --key 42 --mode combined
 
 ```
 SCT_CS_2/
-├── main.py          # CLI entry point
+├── gui.py           # Tkinter GUI (main entry point)
+├── main.py          # CLI interface (alternative)
 ├── encryptor.py     # Core encryption/decryption logic
 ├── requirements.txt # Dependencies (pillow, numpy)
 └── README.md
