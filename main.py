@@ -103,9 +103,16 @@ def sep(parent, color=BORDER):
 # ── Scrollable panel ──────────────────────────────────────
 
 class ScrollableFrame(tk.Frame):
-    """A frame that scrolls vertically. Wheel works over any child widget."""
+    """
+    Scrollable panel. Works by tracking pointer position against the
+    frame's bounding box — no per-child binding needed.
+    """
+    # Class-level registry so the global handler knows all instances
+    _instances: list = []
+
     def __init__(self, parent, bg=PANEL, **kw):
         super().__init__(parent, bg=bg, **kw)
+        ScrollableFrame._instances.append(self)
 
         self._canvas = tk.Canvas(self, bg=bg, highlightthickness=0)
         self._sb     = tk.Scrollbar(self, orient="vertical",
@@ -117,8 +124,8 @@ class ScrollableFrame(tk.Frame):
         self.inner = tk.Frame(self._canvas, bg=bg)
         self._win  = self._canvas.create_window((0, 0), window=self.inner,
                                                 anchor="nw")
-        self.inner.bind("<Configure>",       self._on_configure)
-        self._canvas.bind("<Configure>",     self._on_canvas_resize)
+        self.inner.bind("<Configure>",   self._on_configure)
+        self._canvas.bind("<Configure>", self._on_canvas_resize)
 
     def _on_configure(self, _):
         self._canvas.configure(scrollregion=self._canvas.bbox("all"))
@@ -126,23 +133,41 @@ class ScrollableFrame(tk.Frame):
     def _on_canvas_resize(self, e):
         self._canvas.itemconfig(self._win, width=e.width)
 
-    def _on_wheel(self, e):
-        if e.num == 4:   self._canvas.yview_scroll(-1, "units")
-        elif e.num == 5: self._canvas.yview_scroll( 1, "units")
-        else:            self._canvas.yview_scroll(int(-e.delta / 20), "units")
+    def scroll(self, e):
+        """Called by the global handler when pointer is over this frame."""
+        if e.num == 4:
+            self._canvas.yview_scroll(-1, "units")
+        elif e.num == 5:
+            self._canvas.yview_scroll(1, "units")
+        else:
+            self._canvas.yview_scroll(int(-e.delta / 20), "units")
+
+    def contains_pointer(self) -> bool:
+        """True if the mouse is currently within this frame's area."""
+        try:
+            rx = self.winfo_rootx()
+            ry = self.winfo_rooty()
+            rw = self.winfo_width()
+            rh = self.winfo_height()
+            px = self.winfo_pointerx()
+            py = self.winfo_pointery()
+            return rx <= px <= rx + rw and ry <= py <= ry + rh
+        except Exception:
+            return False
 
     def bind_scroll_recursive(self, widget=None):
-        """Bind mouse-wheel to every widget in this scroll frame recursively."""
-        if widget is None:
-            widget = self
-        widget.bind("<MouseWheel>", self._on_wheel, add="+")
-        widget.bind("<Button-4>",   self._on_wheel, add="+")
-        widget.bind("<Button-5>",   self._on_wheel, add="+")
-        for child in widget.winfo_children():
-            self.bind_scroll_recursive(child)
+        pass  # kept for compatibility
 
     def scroll_top(self):
         self._canvas.yview_moveto(0)
+
+
+def _global_scroll_handler(event):
+    """Single handler bound to root — delegates to whichever panel has pointer."""
+    for sf in ScrollableFrame._instances:
+        if sf.contains_pointer():
+            sf.scroll(event)
+            break
 
 # ── Orange button that actually shows on macOS ────────────
 
@@ -793,6 +818,11 @@ class App(tk.Tk):
             if i < 3:
                 tk.Label(stb, text="·", bg="#1e293b", fg="#334155",
                          font=(FONT, 9)).pack(side="left")
+
+        # Global scroll handler — works over every widget in either panel
+        self.bind_all("<MouseWheel>", _global_scroll_handler)
+        self.bind_all("<Button-4>",   _global_scroll_handler)
+        self.bind_all("<Button-5>",   _global_scroll_handler)
 
         self.update_idletasks()
         sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
