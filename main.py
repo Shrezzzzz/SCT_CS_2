@@ -144,6 +144,9 @@ class ScrollableFrame(tk.Frame):
         elif e.num == 5: self._canvas.yview_scroll( 1, "units")
         else:            self._canvas.yview_scroll(int(-e.delta/40), "units")
 
+    def scroll_top(self):
+        self._canvas.yview_moveto(0)
+
 # ── Orange button that actually shows on macOS ────────────
 
 class OrangeBtn(tk.Frame):
@@ -340,6 +343,7 @@ class EncryptPanel(tk.Frame):
         # Scrollable inner area
         sf = ScrollableFrame(self, bg=PANEL)
         sf.pack(fill="both", expand=True)
+        self._sf = sf
         self._p = sf.inner
         self._build()
 
@@ -380,7 +384,7 @@ class EncryptPanel(tk.Frame):
         lbl(vp_hdr, "Viewport Buffer", size=9, bold=True).pack(side="left")
         self._vp_meta = lbl(vp_hdr, "", size=8, fg=SUBTEXT)
         self._vp_meta.pack(side="right")
-        self._thumb = tk.Label(self._vp, bg=DARK_BG, height=14)
+        self._thumb = tk.Label(self._vp, bg=DARK_BG)
         self._thumb.pack(fill="x")
         ovl = tk.Frame(self._thumb, bg=DARK_BG)
         self._crc_lbl = tk.Label(ovl, text="", bg=DARK_BG, fg="#64748b",
@@ -467,18 +471,17 @@ class EncryptPanel(tk.Frame):
             thumb = img.copy().convert("RGB")
             thumb.thumbnail((THUMB_W, THUMB_H), Image.LANCZOS)
             photo = ImageTk.PhotoImage(thumb)
-            self._thumb.config(image=photo, text="")
+            self._thumb.config(image=photo, text="", width=photo.width(), height=photo.height())
             self._thumb.image = photo
             crc = hashlib.md5(img.tobytes()).hexdigest()[:8].upper()
             self._crc_lbl.config(text=f"CRC32: 0x{crc}")
         except Exception:
             self._thumb.config(text="Preview unavailable", fg=SUBTEXT)
-        self._vp.pack(fill="x", in_=self._p.winfo_children()[0])
-        # pack viewport before info box
         self._vp.pack(fill="x", pady=(0,8))
         self._enc_bytes = None
         self._res_row.pack_forget()
         self._dl_row.pack_forget()
+        self.after(50, self._sf.scroll_top)
 
     def _clear_file(self):
         self._path = self._enc_bytes = self._name = None
@@ -553,6 +556,7 @@ class DecryptPanel(tk.Frame):
 
         sf = ScrollableFrame(self, bg=PANEL)
         sf.pack(fill="both", expand=True)
+        self._sf = sf
         self._p = sf.inner
         self._build()
 
@@ -628,7 +632,7 @@ class DecryptPanel(tk.Frame):
         badge(rh, "Decrypted (SHA-256 Verified)",
               bg=GREEN_L, fg=GREEN).pack(side="right")
 
-        self._out_thumb = tk.Label(self._restored, bg=DARK_BG, height=14)
+        self._out_thumb = tk.Label(self._restored, bg=DARK_BG)
         self._out_thumb.pack(fill="x")
         ovl = tk.Frame(self._out_thumb, bg=DARK_BG)
         self._out_meta = tk.Label(ovl, text="", bg=DARK_BG, fg="#64748b",
@@ -662,6 +666,7 @@ class DecryptPanel(tk.Frame):
         self._file_row.pack(fill="x", pady=(8,0))
         self._pk_status.config(text="Passkey status: Awaiting input…", fg=SUBTEXT)
         self._restored.pack_forget()
+        self.after(50, self._sf.scroll_top)
 
     def _clear_file(self):
         self._enc_path = self._result_img = self._name = None
@@ -701,7 +706,7 @@ class DecryptPanel(tk.Frame):
         thumb = img.copy().convert("RGB")
         thumb.thumbnail((THUMB_W, THUMB_H), Image.LANCZOS)
         photo = ImageTk.PhotoImage(thumb)
-        self._out_thumb.config(image=photo, text="")
+        self._out_thumb.config(image=photo, text="", width=photo.width(), height=photo.height())
         self._out_thumb.image = photo
         self._out_meta.config(text=f"{w} × {h}  ·  lossless PNG")
         self._pk_status.config(
