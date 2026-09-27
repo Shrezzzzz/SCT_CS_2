@@ -66,8 +66,9 @@ BORDER   = "#dde1e7"
 BORDER2  = "#c8cdd6"
 TEXT     = "#1a1d23"
 SUBTEXT  = "#6b7280"
-ORANGE   = "#e8620a"
-ORANGE_H = "#c45008"
+BTN_BG   = "#1e293b"
+BTN_HV   = "#334155"
+BTN_DIS  = "#94a3b8"
 GREEN    = "#16a34a"
 GREEN_L  = "#dcfce7"
 BLUE     = "#2563eb"
@@ -102,7 +103,7 @@ def sep(parent, color=BORDER):
 # ── Scrollable panel ──────────────────────────────────────
 
 class ScrollableFrame(tk.Frame):
-    """A frame that scrolls vertically inside a canvas."""
+    """A frame that scrolls vertically. Wheel works over any child widget."""
     def __init__(self, parent, bg=PANEL, **kw):
         super().__init__(parent, bg=bg, **kw)
 
@@ -116,12 +117,8 @@ class ScrollableFrame(tk.Frame):
         self.inner = tk.Frame(self._canvas, bg=bg)
         self._win  = self._canvas.create_window((0, 0), window=self.inner,
                                                 anchor="nw")
-        self.inner.bind("<Configure>", self._on_configure)
-        self._canvas.bind("<Configure>", self._on_canvas_resize)
-
-        # Mouse wheel
-        self._canvas.bind("<Enter>",    self._bind_wheel)
-        self._canvas.bind("<Leave>",    self._unbind_wheel)
+        self.inner.bind("<Configure>",       self._on_configure)
+        self._canvas.bind("<Configure>",     self._on_canvas_resize)
 
     def _on_configure(self, _):
         self._canvas.configure(scrollregion=self._canvas.bbox("all"))
@@ -129,20 +126,20 @@ class ScrollableFrame(tk.Frame):
     def _on_canvas_resize(self, e):
         self._canvas.itemconfig(self._win, width=e.width)
 
-    def _bind_wheel(self, _):
-        self._canvas.bind_all("<MouseWheel>",  self._on_wheel)
-        self._canvas.bind_all("<Button-4>",    self._on_wheel)
-        self._canvas.bind_all("<Button-5>",    self._on_wheel)
-
-    def _unbind_wheel(self, _):
-        self._canvas.unbind_all("<MouseWheel>")
-        self._canvas.unbind_all("<Button-4>")
-        self._canvas.unbind_all("<Button-5>")
-
     def _on_wheel(self, e):
         if e.num == 4:   self._canvas.yview_scroll(-1, "units")
         elif e.num == 5: self._canvas.yview_scroll( 1, "units")
-        else:            self._canvas.yview_scroll(int(-e.delta/40), "units")
+        else:            self._canvas.yview_scroll(int(-e.delta / 20), "units")
+
+    def bind_scroll_recursive(self, widget=None):
+        """Bind mouse-wheel to every widget in this scroll frame recursively."""
+        if widget is None:
+            widget = self
+        widget.bind("<MouseWheel>", self._on_wheel, add="+")
+        widget.bind("<Button-4>",   self._on_wheel, add="+")
+        widget.bind("<Button-5>",   self._on_wheel, add="+")
+        for child in widget.winfo_children():
+            self.bind_scroll_recursive(child)
 
     def scroll_top(self):
         self._canvas.yview_moveto(0)
@@ -150,14 +147,11 @@ class ScrollableFrame(tk.Frame):
 # ── Orange button that actually shows on macOS ────────────
 
 class OrangeBtn(tk.Frame):
-    """
-    macOS Tkinter ignores bg on tk.Button. We fake a proper button
-    using a Frame + Label so the colour always shows.
-    """
+    """Dark charcoal button that renders correctly on macOS."""
     def __init__(self, parent, text, command, full=False, height=38):
-        super().__init__(parent, bg=ORANGE, cursor="arrow")
+        super().__init__(parent, bg=BTN_BG, cursor="arrow")
         self._cmd = command
-        self._lbl = tk.Label(self, text=text, bg=ORANGE, fg="white",
+        self._lbl = tk.Label(self, text=text, bg=BTN_BG, fg="white",
                              font=(FONT, 10, "bold"),
                              padx=18, pady=0, height=2)
         self._lbl.pack(fill="both", expand=True)
@@ -168,14 +162,14 @@ class OrangeBtn(tk.Frame):
 
     def _on_click(self, _): self._cmd()
     def _on_enter(self, _):
-        self.config(bg=ORANGE_H); self._lbl.config(bg=ORANGE_H)
+        self.config(bg=BTN_HV); self._lbl.config(bg=BTN_HV)
     def _on_leave(self, _):
-        self.config(bg=ORANGE);   self._lbl.config(bg=ORANGE)
+        self.config(bg=BTN_BG); self._lbl.config(bg=BTN_BG)
     def set_text(self, t): self._lbl.config(text=t)
     def set_state(self, s):
-        c = SUBTEXT if s == "disabled" else ORANGE
+        c = BTN_DIS if s == "disabled" else BTN_BG
         self.config(bg=c); self._lbl.config(bg=c)
-        self._lbl.config(fg="#aaa" if s == "disabled" else "white")
+        self._lbl.config(fg="#e2e8f0" if s == "disabled" else "white")
         for w in (self, self._lbl):
             w.unbind("<Button-1>")
             if s != "disabled":
@@ -346,6 +340,8 @@ class EncryptPanel(tk.Frame):
         self._sf = sf
         self._p = sf.inner
         self._build()
+        # Bind scroll after all widgets are created
+        self.after(100, self._rebind_scroll)
 
     def _build(self):
         p = self._p
@@ -452,6 +448,9 @@ class EncryptPanel(tk.Frame):
     def _pw_changed(self):
         self._strength.update(self._pk.get())
 
+    def _rebind_scroll(self):
+        self._sf.bind_scroll_recursive()
+
     def _browse(self):
         path = filedialog.askopenfilename(
             filetypes=[("Images","*.png *.jpg *.jpeg *.bmp *.tiff *.webp"),("All","*.*")])
@@ -482,6 +481,7 @@ class EncryptPanel(tk.Frame):
         self._res_row.pack_forget()
         self._dl_row.pack_forget()
         self.after(50, self._sf.scroll_top)
+        self.after(150, self._rebind_scroll)
 
     def _clear_file(self):
         self._path = self._enc_bytes = self._name = None
@@ -521,6 +521,7 @@ class EncryptPanel(tk.Frame):
         self._dl_row.pack(fill="x", pady=(6,0))
         self._enc_btn.set_text("  Encrypt Image")
         self._enc_btn.set_state("normal")
+        self.after(100, self._rebind_scroll)
 
     def _download(self):
         if not self._enc_bytes: return
@@ -559,6 +560,7 @@ class DecryptPanel(tk.Frame):
         self._sf = sf
         self._p = sf.inner
         self._build()
+        self.after(100, self._rebind_scroll)
 
     def _build(self):
         p = self._p
@@ -653,6 +655,9 @@ class DecryptPanel(tk.Frame):
         self._pk_status.config(
             text="Passkey status: Enter key to validate" if on else "")
 
+    def _rebind_scroll(self):
+        self._sf.bind_scroll_recursive()
+
     def _browse(self):
         path = filedialog.askopenfilename(
             filetypes=[("Encrypted","*.enc *.txt"),("All","*.*")])
@@ -667,6 +672,7 @@ class DecryptPanel(tk.Frame):
         self._pk_status.config(text="Passkey status: Awaiting input…", fg=SUBTEXT)
         self._restored.pack_forget()
         self.after(50, self._sf.scroll_top)
+        self.after(150, self._rebind_scroll)
 
     def _clear_file(self):
         self._enc_path = self._result_img = self._name = None
@@ -715,6 +721,7 @@ class DecryptPanel(tk.Frame):
         self._restored.pack(fill="x", pady=(8,0))
         self._dec_btn.set_text("  Decrypt Image")
         self._dec_btn.set_state("normal")
+        self.after(100, self._rebind_scroll)
 
     def _download(self):
         if not self._result_img: return
