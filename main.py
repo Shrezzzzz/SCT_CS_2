@@ -442,7 +442,7 @@ class EncryptPanel(tk.Frame):
         # Info
         info = tk.Frame(pad, bg=BLUE_L,
                         highlightbackground="#bfdbfe", highlightthickness=1)
-        tk.Label(info, text="i  After encryption, download the standalone .enc payload or export raw Base64 data.",
+        tk.Label(info, text="After encryption, download the standalone .enc payload or export raw Base64 data.",
                  bg=BLUE_L, fg=BLUE, font=(FONT, 8),
                  wraplength=340, justify="left", padx=10, pady=8).pack()
         info.pack(fill="x", pady=(0,10))
@@ -646,7 +646,7 @@ class DecryptPanel(tk.Frame):
         warn = tk.Frame(pad, bg=YELLOW_L,
                         highlightbackground="#fde68a", highlightthickness=1)
         tk.Label(warn,
-                 text="⚠  If decryption fails, the passkey may be incorrect or the payload bytes have been altered or corrupted in transit.",
+                 text="If decryption fails, the passkey may be incorrect or the payload bytes have been altered or corrupted in transit.",
                  bg=YELLOW_L, fg=YELLOW_B, font=(FONT, 8),
                  wraplength=340, justify="left", padx=10, pady=8).pack()
         warn.pack(fill="x", pady=(0,10))
