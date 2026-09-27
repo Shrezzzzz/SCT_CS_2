@@ -201,8 +201,9 @@ class DropZone(tk.Frame):
         inner = tk.Frame(self, bg=DASH_BG, pady=16)
         inner.pack(fill="x")
         lbl(inner, icon, size=22, fg=SUBTEXT).pack()
-        lbl(inner, title,    size=11, bold=True).pack(pady=(6,2))
-        lbl(inner, subtitle, size=9,  fg=SUBTEXT).pack()
+        lbl(inner, title, size=11, bold=True).pack(pady=(6,2))
+        if subtitle:
+            lbl(inner, subtitle, size=9, fg=SUBTEXT).pack()
         row = tk.Frame(inner, bg=DASH_BG)
         row.pack(pady=(12,0))
         for c in chips:
@@ -366,7 +367,7 @@ class EncryptPanel(tk.Frame):
         # Drop zone
         lbl(pad, "Source Media Payload", size=9, fg=SUBTEXT).pack(anchor="w", pady=(0,5))
         DropZone(pad, "⬆", "Choose Image (Max 10MB)",
-                 "Drag and drop raw pixel buffer or import from storage",
+                 "",
                  ["PNG", "JPG", "WEBP"], self._browse).pack(fill="x")
 
         self._file_row = FileInfoRow(pad, self._clear_file)
@@ -585,7 +586,7 @@ class DecryptPanel(tk.Frame):
         # Drop zone
         lbl(pad, "Encrypted Payload Input", size=9, fg=SUBTEXT).pack(anchor="w", pady=(0,5))
         DropZone(pad, "📄", "Choose encrypted file (.enc)",
-                 "Drag ciphertext bundle or paste raw Base64 payload",
+                 "",
                  [".ENC CIPHER"], self._browse).pack(fill="x")
 
         self._file_row = FileInfoRow(pad, self._clear_file)
