@@ -67,9 +67,11 @@ def decrypt_bytes(enc: bytes, passkey: str) -> Image.Image:
     flat_enc = np.frombuffer(body, dtype=np.uint8).reshape(w * h, channels)
     indices  = _shuffle_indices(w * h, seed)
 
+    # Inverse shuffle: shuffled[i] came from original position indices[i]
+    # so we put it back: restored[indices[i]] = flat_enc[i]
     restored = np.empty_like(flat_enc)
-    for orig, shuf in enumerate(indices):
-        restored[orig] = flat_enc[shuf]
+    for i, orig in enumerate(indices):
+        restored[orig] = flat_enc[i]
 
     pixels = (restored ^ (seed % 256)).astype(np.uint8).reshape(h, w, channels)
     return Image.fromarray(pixels, mode)
